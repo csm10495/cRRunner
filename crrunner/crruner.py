@@ -30,6 +30,12 @@ class TimeoutError(Exception):
 
 class Result(object):
     def __init__(self, statusCode, remoteReturnCode=None, stdout=None, stderr=None, exception=None):
+        '''
+        Brief:
+            init for Result object. The result is the result of a command executed remotely.
+                It includes the remote return code, stdout, stderr and if generated locally,
+                    a Python exception. Typically the Python exception would be for a timeout.
+        '''
         self.statusCode = statusCode
         self.remoteReturnCode = remoteReturnCode
         self.stdout = stdout
@@ -37,9 +43,18 @@ class Result(object):
         self.exception = exception
 
     def getStatus(self):
+        '''
+        Brief:
+            Parses the statusCode as a string with description
+        '''
         return '%d - %s' % (self.statusCode, STATUS_CODES.get(self.statusCode, 'Unknown'))
 
     def didFail(self):
+        '''
+        Brief:
+            Returns True if the command failed due to something other than the command itself failing
+                For example: Timeout
+        '''
         return self.statusCode != 0
 
 class CopyObject(object):
@@ -267,6 +282,21 @@ class cRRunner(object):
         if not self.quiet:
             print('cRunner Log - ' + str(s))
 
+    def close(self):
+        '''
+        Brief:
+            Closes all known connections
+        '''
+        # do not call the _getSftpClient/_getSshClient() functions
+        #  since they will create if not needed
+        if self._sftpClient:
+            self._sftpClient.close()
+            self._sftpClient = None
+
+        if self._sshClient:
+            self._sshClient.close()
+            self._sshClient = None
+
     def run(self):
         '''
         Brief:
@@ -284,6 +314,9 @@ class cRRunner(object):
         self._doCopyObjectsFrom()
         if self.cleanRemote:
             self._doDeleteRemote()
+
+        self.close()
+
         return result
 
 if __name__ == '__main__':
