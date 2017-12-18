@@ -11,6 +11,7 @@ Author(s):
 
 import os
 import paramiko
+import stat
 import time
 
 STATUS_SUCCESS = 0
@@ -42,28 +43,33 @@ class Result(object):
         return self.statusCode != 0
 
 class CopyObject(object):
-    def __init__(self, local, remote=None):
+    def __init__(self, local=None, remote=None):
         '''
         Brief:
             Init for CopyObject. CopyObject is used to say this thing should be copyied here remotely
 
         Argument(s):
-            local - (Required) - Location of local object (file or folder)
+            local - (Optional; Defaults to None) - Location of local object (file or folder)
+                If None is given, will be placed/grabbed in/from the cwd
             remote- (Optional; Defaults to None) - Location for this object on remote
-                If None is given, will be placed in the cwd
+                If None is given, will be placed/grabbed in/from  in the cwd
         '''
+        if local is None and remote is None:
+            raise ValueError('local and remote cannot both be None')
+        
         self.local = local
         self.remote = remote
 
 class cRRunner(object):
-    def __init__(self, remoteIp, remoteCmd, remoteCmdTimeout=60, remoteUsername=None, remotePassword=None, copyObjectsTo=None, copyObjectsFrom=None, remotePort=22, quiet=True):
+    def __init__(self, remoteIp, remoteCmd=None, remoteCmdTimeout=60, remoteUsername=None, remotePassword=None, copyObjectsTo=None, copyObjectsFrom=None, remotePort=22, quiet=True):
         '''
         Brief:
             Configuration (and runner) for cRemote Runner
 
         Argument(s):
             remoteIp - (Required) - IP for remote SSH connection
-            remoteCmd - (Required) - Cmd to execute after copying all copyObjects
+            remoteCmd - (Optional; Defaults to None) - Cmd to execute after copying all copyObjects
+                If None, won't use execute a command.
             remoteCmdTimeout - (Optional; Defaults to 60) - Timeout for remoteCmd in seconds
             remoteUsername - (Optional; Defaults to None) - Text username for remote SSH connection
                 If None is given, will assume we don't need credentials.
@@ -198,6 +204,18 @@ class cRRunner(object):
                     self._safeMkdir('%s/%s' % (remote, item))
                     self._put(fullPath, '%s/%s' % (remote, item))
 
+    def _remoteIsDir(self, remote):
+        '''
+        Brief:
+            Checks if remote is a directory
+        '''
+        sftp = self._getSftpClient()
+        try:
+            attributes = sftp.stat(remote)
+            return stat.S_ISDIR(attributes.st_mode)
+        except:
+            return False # stat failed
+        
     def _get(self, local, remote):
         '''
         Brief:
@@ -237,10 +255,18 @@ class cRRunner(object):
                 Copies objects to, executes, then copies objects from
         '''
         self._doCopyObjectsTo()
-        try:
-            result = self._execute()
-        except Exception as ex:
-            # remember we are passing the stderr/stdout with the exception
-            result = Result(statusCode=STATUS_TIMEOUT, exception=ex, stdout=ex.stdout.read().decode(), stderr=ex.stderr.read().decode())
+        result = None
+        if self.remoteCmd is not None:
+            try:
+                result = self._execute()
+            except Exception as ex:
+                # remember we are passing the stderr/stdout with the exception
+                result = Result(statusCode=STATUS_TIMEOUT, exception=ex, stdout=ex.stdout.read().decode(), stderr=ex.stderr.read().decode())
         self._doCopyObjectsFrom()
         return result
+        
+if __name__ == '__main__':
+    # test code
+    remoteIp = os.environ['REMOTE_IP']
+    remotePassword = os.environ['REMOTE_PASSWORD'] 
+    c = cRRunner(remoteIp=remoteIp, remoteUsername='test', remotePassword=remotePassword, remoteCmd='ls')
