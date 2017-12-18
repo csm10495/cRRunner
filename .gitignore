@@ -1,0 +1,3 @@
+*.pyc
+crruner.egg-info/**
+dist/**
