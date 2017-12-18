@@ -270,7 +270,7 @@ class cRRunner(object):
     def run(self):
         '''
         Brief:
-            Runs the CRRuner.
+            Runs the CRRunner.
                 Copies objects to, executes, then copies objects from
         '''
         self._doCopyObjectsTo()
