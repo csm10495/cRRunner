@@ -56,12 +56,12 @@ class CopyObject(object):
         '''
         if local is None and remote is None:
             raise ValueError('local and remote cannot both be None')
-        
+
         self.local = local
         self.remote = remote
 
 class cRRunner(object):
-    def __init__(self, remoteIp, remoteCmd=None, remoteCmdTimeout=60, remoteUsername=None, remotePassword=None, copyObjectsTo=None, copyObjectsFrom=None, remotePort=22, quiet=True):
+    def __init__(self, remoteIp, remoteCmd=None, remoteCmdTimeout=60, remoteUsername=None, remotePassword=None, copyObjectsTo=None, copyObjectsFrom=None, remotePort=22, cleanRemote=True, quiet=True):
         '''
         Brief:
             Configuration (and runner) for cRemote Runner
@@ -80,6 +80,8 @@ class cRRunner(object):
             copyObjectsFrom - (Optional; Derfaults to None) - List of CopyObject to copy from (after)
                 If None, nothing to copy... TODO. NOT IMPLEMENTED YET.
             remotePort - (Optional; Defaults to 22) - Port for SSH connection
+            cleanRemote - (Optional; Defaults to True) - If True, delete copied files on remote
+                after copying objects from back.
             quiet - (Optional; Defaults to True) - If True, be quiet and don't log to screen
         '''
         self._sshClient = None
@@ -107,6 +109,7 @@ class cRRunner(object):
 
         self.copyObjectsFrom = copyObjectsFrom
         self.remotePort = remotePort
+        self.cleanRemote = cleanRemote
 
     def _getSshClient(self):
         '''
@@ -184,6 +187,7 @@ class cRRunner(object):
         '''
         Brief:
             Can put files or folders on remote
+                Returns list of remote files put with paths to them.
         '''
         sftp = self._getSftpClient()
 
@@ -192,17 +196,21 @@ class cRRunner(object):
 
         self.log("Putting %s -> %s" % (local, remote))
 
+        retList = []
         if os.path.isfile(local):
+            retList.append(remote)
             sftp.put(local, remote)
         else: # folder
             self._safeMkdir(remote)
             for item in os.listdir(local):
                 fullPath = os.path.join(local, item)
                 if os.path.isfile(fullPath):
-                    self._put(fullPath, '%s/%s' % (remote, item))
+                    retList.extend(self._put(fullPath, '%s/%s' % (remote, item)))
                 else:
                     self._safeMkdir('%s/%s' % (remote, item))
-                    self._put(fullPath, '%s/%s' % (remote, item))
+                    retList.extend(self._put(fullPath, '%s/%s' % (remote, item)))
+
+        return retList
 
     def _remoteIsDir(self, remote):
         '''
@@ -215,7 +223,7 @@ class cRRunner(object):
             return stat.S_ISDIR(attributes.st_mode)
         except:
             return False # stat failed
-        
+
     def _get(self, local, remote):
         '''
         Brief:
@@ -228,9 +236,10 @@ class cRRunner(object):
         Brief:
             Goes through copyObjectsTo and copies all over to remote
         '''
+        self._remoteToDelete = []
         stfp = self._getSftpClient()
         for copyObj in self.copyObjectsTo:
-            self._put(copyObj.local, copyObj.remote)
+            self._remoteToDelete.extend(self._put(copyObj.local, copyObj.remote))
 
     def _doCopyObjectsFrom(self):
         '''
@@ -239,6 +248,16 @@ class cRRunner(object):
         '''
         if len(self.copyObjectsFrom) != 0:
             raise NotImplementedError("copyObjectsFrom is not implemented yet.")
+
+    def _doDeleteRemote(self):
+        '''
+        Brief:
+            Deletes all known (copied) remote files
+        '''
+        sftp = self._getSftpClient()
+        for i in self._remoteToDelete:
+            sftp.unlink(i)
+        self.log("Cleaning... Deleted %d remote files" % len(self._remoteToDelete))
 
     def log(self, s):
         '''
@@ -263,10 +282,15 @@ class cRRunner(object):
                 # remember we are passing the stderr/stdout with the exception
                 result = Result(statusCode=STATUS_TIMEOUT, exception=ex, stdout=ex.stdout.read().decode(), stderr=ex.stderr.read().decode())
         self._doCopyObjectsFrom()
+        if self.cleanRemote:
+            self._doDeleteRemote()
         return result
-        
+
 if __name__ == '__main__':
     # test code
     remoteIp = os.environ['REMOTE_IP']
-    remotePassword = os.environ['REMOTE_PASSWORD'] 
-    c = cRRunner(remoteIp=remoteIp, remoteUsername='test', remotePassword=remotePassword, remoteCmd='ls')
+    remotePassword = os.environ['REMOTE_PASSWORD']
+
+    copyTos = [CopyObject(r"C:\Users\csm10495\Desktop\Stuff\app")]
+
+    c = cRRunner(remoteIp=remoteIp, remoteUsername='test', remotePassword=remotePassword, remoteCmd='ls', copyObjectsTo=copyTos, quiet=False)
