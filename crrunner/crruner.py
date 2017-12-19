@@ -153,7 +153,7 @@ class cRRunner(object):
     def _get(self, remote, local):
         '''
         Brief:
-            Can get files or folders on remote
+            Can get files or folders from remote
         '''
         startDir = os.getcwd()
         try:
