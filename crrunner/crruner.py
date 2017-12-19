@@ -150,12 +150,40 @@ class cRRunner(object):
         except:
             return False # stat failed
 
-    def _get(self, local, remote):
+    def _get(self, remote, local):
         '''
         Brief:
             Can get files or folders on remote
         '''
-        raise NotImplementedError
+        startDir = os.getcwd()
+        try:
+            sftp = self._getSftpClient()
+            attributes = sftp.stat(remote)
+            # not using _remoteIsDir() since it doesn't say if remote was a file or non-existant
+            isDir = stat.S_ISDIR(attributes.st_mode)
+            if not isDir: # is a file:
+                remoteCwd = str(sftp.getcwd())
+                self.log("Getting %s/%s -> %s/%s" % (remoteCwd, remote, os.getcwd(), local))
+                sftp.get(remote, local)
+            else:
+                # is a folder
+                remoteFiles = sftp.listdir(remote)
+                folderName = os.path.basename(remote)
+                try:
+                    os.mkdir(folderName) # make sure folder exists
+                except:
+                    pass
+
+                os.chdir(folderName)
+                sftp.chdir(remote)
+                for remoteFileName in remoteFiles:
+                    self._get(remoteFileName, remoteFileName) # remoteFileName should match the local name
+
+                # go back
+                os.chdir('..')
+                sftp.chdir('..')
+        finally:
+            os.chdir(startDir)
 
     def log(self, s):
         '''
@@ -208,5 +236,11 @@ if __name__ == '__main__':
         ),
         ExecuteEvent('sleep 5', 2),
         DeleteAllCopiedToRemote(),
+        ExecuteEvent('echo hey > /tmp/mytmp.txt'),
+        CopyFromRemoteEvent(
+            [
+                CopyObject('mytmp.txt', '/tmp/mytmp.txt')
+            ]
+        )
         ],
     remoteUsername='test', remotePassword=remotePassword, quiet=False)

@@ -109,7 +109,11 @@ class CopyFromRemoteEvent(Event):
         Brief:
             Copies the files from remote to local
         '''
-        raise NotImplementedError
+        stfp = runner._getSftpClient()
+        for copyObj in self.listOfCopyObject:
+            runner._get(copyObj.remote, copyObj.local)
+
+        return Result() # todo... check status of put?
 
 class DeleteAllCopiedToRemote(Event):
     '''
