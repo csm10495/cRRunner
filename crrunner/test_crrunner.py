@@ -138,7 +138,6 @@ class MockSshClient(object):
         Brief:
             Will kill the existing command if it is running
         '''
-        print('close!')
         if self.commandInProgress:
             self.killCommandInProgress = True
 
@@ -222,6 +221,8 @@ def test_execute():
 
     result = m.run()
     assert len(result) == 2
+
+    print (result[0])
 
     assert result[0].didFail()
     assert result[0].statusCode == STATUS_TIMEOUT

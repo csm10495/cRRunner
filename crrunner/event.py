@@ -173,6 +173,15 @@ class Result(object):
         '''
         return self.statusCode != STATUS_SUCCESS
 
+    def __str__(self):
+        retStr = ''
+        retStr += 'statusCode: %d\n' % self.statusCode
+        retStr += 'remoteReturnCode: %d\n' % self.remoteReturnCode
+        retStr += 'exception: \n%s\n' % self.exception
+        retStr += 'stdout:\n%s\n' % self.stdout
+        retStr += 'stderr:\n%s\n' % self.stderr
+        return retStr
+
 class CopyObject(object):
     def __init__(self, local=None, remote=None):
         '''
