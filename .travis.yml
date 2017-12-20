@@ -10,6 +10,6 @@ notifications:
     on_success: never
     on_failure: always
 install:
-  - pip install pytest
+  - pip install pytest paramiko
 script:
   - python -m pytest -s
