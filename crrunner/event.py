@@ -171,7 +171,7 @@ class Result(object):
             Returns True if the command failed due to something other than the command itself failing
                 For example: Timeout
         '''
-        return self.statusCode != 0
+        return self.statusCode != STATUS_SUCCESS
 
 class CopyObject(object):
     def __init__(self, local=None, remote=None):

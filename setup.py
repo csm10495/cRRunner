@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(name='crrunner',
-      version='0.0.1',
+      version='0.0.3',
       description='Module for running something remotely via SSH',
       url='http://github.com/csm10495/crrunner',
       author='csm10495',
       author_email='csm10495@gmail.com',
       license='MIT',
       packages=['crrunner'],
-      install_requires=["paramiko"],
+      install_requires=["paramiko", "pytest"],
       python_requires='>=2.7, !=3.0.*, !=3.1.*',
       zip_safe=True,
     long_description="""\
