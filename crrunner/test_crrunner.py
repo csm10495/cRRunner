@@ -222,8 +222,6 @@ def test_execute():
     result = m.run()
     assert len(result) == 2
 
-    print (result[0])
-
     assert result[0].didFail()
     assert result[0].statusCode == STATUS_TIMEOUT
     assert len(result[0].stdout.splitlines()) > 1

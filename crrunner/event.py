@@ -174,8 +174,13 @@ class Result(object):
         return self.statusCode != STATUS_SUCCESS
 
     def __str__(self):
+        '''
+        Brief:
+            Fancy to string for the Result, that shows all information
+        '''
         retStr = ''
         retStr += 'statusCode: %d\n' % self.statusCode
+        retStr += 'statusCodeParsed: %s\n' % self.getStatus()
         retStr += 'remoteReturnCode: %d\n' % self.remoteReturnCode
         retStr += 'exception: \n%s\n' % self.exception
         retStr += 'stdout:\n%s\n' % self.stdout
