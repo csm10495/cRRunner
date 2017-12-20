@@ -13,4 +13,4 @@ install:
   - pip install pytest paramiko
 
 script:
-  - python -m pytest -s
+  - cd crrunner && python -m pytest -s
