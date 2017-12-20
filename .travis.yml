@@ -13,5 +13,5 @@ notifications:
 install:
   - pip install pytest paramiko
 script:
-  - sudo chmod 777 /bin/ping
+  - sudo chmod u+s `which ping`
   - cd crrunner && python -m pytest -s
