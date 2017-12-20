@@ -10,9 +10,7 @@ notifications:
     on_success: never
     on_failure: always
 install:
-  - pip install pytest paramiko coveralls python-coveralls
+  - pip install pytest paramiko
 
 script:
-  - python -m pytest -s --cov=cRRunner -cov-report term-missing
-after_success:
-  - coveralls
+  - python -m pytest -s
