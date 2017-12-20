@@ -7,7 +7,9 @@ Author(s):
     Charles Machalow via the MIT License
 '''
 
+import shlex
 import shutil
+import signal
 import subprocess
 import threading
 
@@ -48,7 +50,7 @@ class MockStream(object):
         Brief:
             Goes to the ssh client to see if a command is in progress (in progress means status is not ready)
         '''
-        return not self.mockSshClient.commandInProgress
+        return self.mockSshClient.process is None
 
     def recv_exit_status(self):
         '''
@@ -63,8 +65,10 @@ class MockSshClient(object):
         Mocks out the SSH Client to not actually do SSH via Paramiko
     '''
     def __init__(self):
+        self.process = None
         self.commandInProgress = False
         self.killCommandInProgress = False
+        self.grabbedStreams = False
         self.lastExitCode = 0
 
     def __getattr__(self, *args, **kwargs):
@@ -79,9 +83,17 @@ class MockSshClient(object):
         Brief:
             This is passed to a thread to run the subprocess in the background
         '''
-        self.process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # On Windows we can kill the subprocess... not so much on Linux
+        if os.name == 'nt':
+            shell = True
+        else:
+            shell = False
+
+        self.process = subprocess.Popen(shlex.split(cmd), shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
         self.commandInProgress = True
         self.killCommandInProgress = False
+        self.grabbedStreams = False
 
         while not self.killCommandInProgress:
             self.process.poll()
@@ -92,10 +104,15 @@ class MockSshClient(object):
                 break
             time.sleep(.1)
         else:
-            self.process.kill() # kill the process since killCommandInProgress was set
+            self.process.terminate() # kill the process since killCommandInProgress was set
             self.commandInProgress = False
 
+        # give time for exec_command to grab stdout/stderr
+        while self.grabbedStreams is False:
+            time.sleep(.1)
+
         self.process = None
+        self.grabbedStreams = False
 
     def exec_command(self, cmd, get_pty=True):
         '''
@@ -110,13 +127,18 @@ class MockSshClient(object):
         while self.process is None:
             time.sleep(.1)
 
-        return None, MockStream(self, self.process.stdout), MockStream(self, self.process.stderr)
+        stdout, stderr = MockStream(self, self.process.stdout), MockStream(self, self.process.stderr)
+
+        self.grabbedStreams = True
+
+        return None, stdout, stderr
 
     def close(self):
         '''
         Brief:
             Will kill the existing command if it is running
         '''
+        print('close!')
         if self.commandInProgress:
             self.killCommandInProgress = True
 
@@ -186,13 +208,15 @@ def test_execute():
     '''
     if os.name == 'nt':
         pingForAwhileArg = '-n'
+        dir = 'dir'
     else:
         pingForAwhileArg = '-t'
+        dir = 'ls'
 
     m = MockCRRunner(
         [
             ExecuteEvent('ping 127.0.0.1 %s 6' % pingForAwhileArg, 3),
-            ExecuteEvent('dir || ls', 3), # lol should work on Windows and Linux
+            ExecuteEvent(dir, 3),
         ]
     )
 
