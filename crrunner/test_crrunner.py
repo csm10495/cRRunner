@@ -170,6 +170,8 @@ class MockSftpClient(object):
     getcwd = lambda self: os.getcwd()
     unlink = lambda self, x: os.unlink(x)
     chdir = lambda self, x: None # don't do anything since we would wind up doing this twice (os.chdir/sftp.chdir)
+    rmdir = lambda self, x: os.rmdir(x)
+    mkdir = lambda self, x: os.mkdir(x)
 
 class MockCRRunner(cRRunner):
     '''
@@ -294,5 +296,19 @@ def test_delete_copied():
 
     assert not os.path.isfile(TEST_FILE) # should be deleted
 
+def test_dir_create_check():
+    '''
+    Brief::
+        Check that we can create a directory and make sure its a dir
+    '''
+    m = MockCRRunner([])
+    TEST_FOLDER = 'test'
 
+    m._safeMkdir(TEST_FOLDER)
+    m._safeMkdir(TEST_FOLDER) # don't traceback
 
+    assert m._remoteIsDir(TEST_FOLDER)
+
+    m._getSftpClient().rmdir(TEST_FOLDER)
+
+    assert not m._remoteIsDir(TEST_FOLDER)
