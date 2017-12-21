@@ -222,7 +222,7 @@ class cRRunner(object):
 
         return self.results
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     # test code
     remoteIp = os.environ['REMOTE_IP']
     remotePassword = os.environ['REMOTE_PASSWORD']

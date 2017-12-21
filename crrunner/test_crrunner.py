@@ -178,7 +178,7 @@ class MockCRRunner(cRRunner):
     Brief:
         Mocks out the cRRunner to not actually do SSH via Paramiko
     '''
-    def __init__(self, eventList, quiet=True):
+    def __init__(self, eventList, quiet=False):
         '''
         init for the MockCRRunner. Only take in an eventList and quiet. Everything else is mocked.
         '''
