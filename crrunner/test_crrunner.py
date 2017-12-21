@@ -255,9 +255,9 @@ def test_copy():
 
     m = MockCRRunner(
         [
-            CopyToRemoteEvent(
+            CopyFromRemoteEvent(
                 [
-                    CopyObject(local=TEST_FILE, remote=OTHER_TEST_FILE)
+                    CopyObject(local=OTHER_TEST_FILE, remote=TEST_FILE)
                 ]
             )
         ]
