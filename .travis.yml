@@ -11,7 +11,9 @@ notifications:
     on_success: never
     on_failure: always
 install:
-  - pip install pytest paramiko
+  - pip install pytest paramiko pytest-cov coveralls
 script:
   - sudo chmod u+s `which ping`
-  - cd crrunner && python -m pytest -s
+  - cd crrunner && python -m pytest -s --cov=crrunner
+after_success:
+  - coveralls

@@ -14,7 +14,6 @@ import subprocess
 import threading
 
 from crrunner import *
-from event import *
 
 class MockStream(object):
     '''
