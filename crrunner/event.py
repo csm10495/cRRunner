@@ -192,6 +192,10 @@ class Result(object):
         return retStr
 
 class CopyObject(object):
+    '''
+    Brief:
+        Used to store the remote/local location for a copy operation
+    '''
     def __init__(self, local=None, remote=None):
         '''
         Brief:
