@@ -139,6 +139,10 @@ class DeleteAllCopiedToRemote(Event):
         return Result() # todo... check status of unlink?
 
 class Result(object):
+    '''
+    Brief:
+        Object used to store information about the result of an event, including stdout, stderr and remoteReturnCode.
+    '''
     def __init__(self, statusCode=STATUS_SUCCESS, remoteReturnCode=None, stdout=None, stderr=None, exception=None, statusCodeDict=None):
         '''
         Brief:
