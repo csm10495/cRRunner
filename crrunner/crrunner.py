@@ -17,6 +17,10 @@ import time
 from event import *
 
 class cRRunner(object):
+    '''
+    Brief:
+        Object used to have events ran remotely via SSH
+    '''
     def __init__(self, remoteIp, eventList, remoteUsername=None, remotePassword=None, remotePort=22, quiet=True):
         '''
         Brief:
