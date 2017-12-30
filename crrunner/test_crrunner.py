@@ -188,6 +188,7 @@ class MockCRRunner(cRRunner):
         '''
         self.eventList = eventList
         self.quiet = quiet
+        self.logOutput = ''
 
     def _getSshClient(self):
         '''
@@ -299,6 +300,11 @@ def test_folder_copy():
 
     @contextlib.contextmanager
     def _createTempFolderWithFolders():
+        '''
+        Brief:
+            Context manager to make a temp folder structure with some nop files
+                Yields when the structure exists. Afterwards, rmtrees the folder.
+        '''
         tempDir = tempfile.gettempdir()
         level1Directory = os.path.join(tempDir, _getRandomSafeName())
         os.makedirs(level1Directory)
@@ -316,6 +322,11 @@ def test_folder_copy():
         shutil.rmtree(level1Directory, ignore_errors=True)
 
     def _areDirectoriesEqual(dir1, dir2):
+        '''
+        Brief:
+            Takes two directories and returns if they are equal in terms of same files/folders in the same
+                relative locations.
+        '''
         fc = filecmp.dircmp(dir1, dir2)
         if len(fc.diff_files) > 0 or len(fc.left_only) or len(fc.right_only):
             return False
@@ -404,3 +415,16 @@ def test_dir_create_check():
     m._getSftpClient().rmdir(TEST_FOLDER)
 
     assert not m._remoteIsDir(TEST_FOLDER)
+
+def test_logging():
+    '''
+    Brief:
+        Makes sure that logging is kept by the cRRunner
+    '''
+    m = MockCRRunner([])
+    msg = 'HEY THERE!'
+    m.log(msg)
+
+    assert msg in m.logOutput
+    assert msg in m.getAndClearLogOutput()
+    assert m.logOutput == ''

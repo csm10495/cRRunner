@@ -50,6 +50,7 @@ class cRRunner(object):
         self.eventList = eventList
 
         self.quiet = quiet
+        self.logOutput = ''
 
     def _getSshClient(self):
         '''
@@ -184,8 +185,20 @@ class cRRunner(object):
         Brief:
             If not quiet, will print s to the screen as a log item
         '''
+        msg = 'cRunner Log - ' + str(s)
         if not self.quiet:
-            print('cRunner Log - ' + str(s))
+            print(msg)
+
+        self.logOutput += msg + os.linesep
+
+    def getAndClearLogOutput(self):
+        '''
+        Brief:
+            Returns all log data. Clears it after
+        '''
+        s = self.logOutput[:]
+        self.logOutput = ''
+        return s
 
     def close(self):
         '''
