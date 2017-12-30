@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='crrunner',
-      version='0.0.4',
+      version='0.0.5',
       description='Module for running something remotely via SSH',
       url='http://github.com/csm10495/crrunner',
       author='csm10495',
