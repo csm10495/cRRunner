@@ -134,11 +134,7 @@ class cRRunner(object):
             self._safeMkdir(remote)
             for item in os.listdir(local):
                 fullPath = os.path.join(local, item)
-                if os.path.isfile(fullPath):
-                    retList.extend(self._put(fullPath, '%s/%s' % (remote, item)))
-                else:
-                    self._safeMkdir('%s/%s' % (remote, item))
-                    retList.extend(self._put(fullPath, '%s/%s' % (remote, item)))
+                retList.extend(self._put(fullPath, '%s/%s' % (remote, item)))
 
         return retList
 
@@ -159,35 +155,29 @@ class cRRunner(object):
         Brief:
             Can get files or folders from remote
         '''
-        startDir = os.getcwd()
-        try:
-            sftp = self._getSftpClient()
-            attributes = sftp.stat(remote)
-            # not using _remoteIsDir() since it doesn't say if remote was a file or non-existant
-            isDir = stat.S_ISDIR(attributes.st_mode)
-            if not isDir: # is a file:
-                remoteCwd = str(sftp.getcwd())
-                self.log("Getting %s/%s -> %s/%s" % (remoteCwd, remote, os.getcwd(), local))
-                sftp.get(remote, local)
-            else:
-                # is a folder
-                remoteFiles = sftp.listdir(remote)
-                folderName = os.path.basename(remote)
-                try:
-                    os.mkdir(folderName) # make sure folder exists
-                except:
-                    pass
+        sftp = self._getSftpClient()
 
-                os.chdir(folderName)
-                sftp.chdir(remote)
-                for remoteFileName in remoteFiles:
-                    self._get(remoteFileName, remoteFileName) # remoteFileName should match the local name
+        if local is None:
+            local = os.path.basename(remote)
 
-                # go back
-                os.chdir('..')
-                sftp.chdir('..')
-        finally:
-            os.chdir(startDir)
+        self.log("Getting %s -> %s" % (remote, local))
+
+        attributes = sftp.stat(remote)
+        # not using _remoteIsDir() since it doesn't say if remote was a file or non-existant
+        isDir = stat.S_ISDIR(attributes.st_mode)
+        if not isDir: # is a file:
+            sftp.get(remote, local)
+        else:
+            # is a folder
+            try:
+                os.makedirs(local)
+            except:
+                pass
+
+            for remoteThing in sftp.listdir(remote):
+                remoteThingFullPath = '%s/%s' % (remote, remoteThing)
+                localThingFullPath = '%s/%s' % (local, remoteThing)
+                self._get(remoteThingFullPath, localThingFullPath)
 
     def log(self, s):
         '''

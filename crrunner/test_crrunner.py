@@ -7,10 +7,14 @@ Author(s):
     Charles Machalow via the MIT License
 '''
 
+import contextlib
+import filecmp
+import random
 import shlex
 import shutil
 import signal
 import subprocess
+import tempfile
 import threading
 
 from crrunner import *
@@ -225,7 +229,7 @@ def test_execute():
 
     assert result[0].didFail()
     assert result[0].statusCode == STATUS_TIMEOUT
-    assert len(result[0].stdout.splitlines()) > 1
+    assert len(result[0].stdout.splitlines()) >= 1
 
     assert not result[1].didFail()
     assert result[1].statusCode == STATUS_SUCCESS
@@ -270,6 +274,94 @@ def test_copy():
 
     os.unlink(TEST_FILE)
     os.unlink(OTHER_TEST_FILE)
+
+def test_folder_copy():
+    '''
+    Brief:
+        Test that copying folders work
+    '''
+
+    def _getRandomSafeName():
+        '''
+        Brief:
+            Returns a string that is safe for a file...
+                and is sort of random.
+        '''
+        return '%08X' % random.randint(0, 0xFFFFFFFFFFFFFFFF)
+
+    def _createFileInDirectory(directory):
+        '''
+        Brief:
+            Creates a file with nop data in it inside the given directory
+        '''
+        with open(os.path.join(directory, _getRandomSafeName()), 'w') as f:
+            f.write("Test")
+
+    @contextlib.contextmanager
+    def _createTempFolderWithFolders():
+        tempDir = tempfile.gettempdir()
+        level1Directory = os.path.join(tempDir, _getRandomSafeName())
+        os.makedirs(level1Directory)
+        level2Directory = os.path.join(level1Directory, _getRandomSafeName())
+        os.makedirs(level2Directory)
+        level3Directory = os.path.join(level2Directory, _getRandomSafeName())
+        os.makedirs(level3Directory)
+                
+        _createFileInDirectory(level1Directory)
+        _createFileInDirectory(level2Directory)
+        _createFileInDirectory(level3Directory)
+
+        yield level1Directory
+
+        shutil.rmtree(level1Directory, ignore_errors=True)
+
+    def _areDirectoriesEqual(dir1, dir2):
+        fc = filecmp.dircmp(dir1, dir2)
+        if len(fc.diff_files) > 0 or len(fc.left_only) or len(fc.right_only):
+            return False
+        
+        for commonDir in fc.common_dirs:
+            nDir1 = os.path.join(dir1, commonDir)
+            nDir2 = os.path.join(dir2, commonDir)
+            if not _areDirectoriesEqual(nDir1, nDir2):
+                return False
+
+        return True
+
+    with _createTempFolderWithFolders() as tmpLocal:
+        tmpRemote = os.path.join(tempfile.gettempdir(), 'remote_' + os.path.basename(tmpLocal))
+        
+        # Copy files to remote
+        m = MockCRRunner([
+            CopyToRemoteEvent(
+                [
+                    CopyObject(local=tmpLocal, remote=tmpRemote),
+                ],
+            ),
+        ]) 
+        m.run()
+
+        # compare remote to local. They should match
+        assert _areDirectoriesEqual(tmpLocal, tmpRemote)
+        
+        tmpLocal2 = os.path.join(tempfile.gettempdir(), 'local_from_remote_' + os.path.basename(tmpLocal))
+
+        # Copy files to local from remote
+        m = MockCRRunner([
+            CopyFromRemoteEvent(
+                [
+                    CopyObject(local=tmpLocal2, remote=tmpRemote),
+                ],
+            ),
+        ]) 
+        m.run()
+
+        # compare remote to local. They should match
+        assert _areDirectoriesEqual(tmpLocal2, tmpRemote)
+        assert _areDirectoriesEqual(tmpLocal2, tmpLocal)
+
+        shutil.rmtree(tmpLocal2, ignore_errors=True)
+        shutil.rmtree(tmpRemote, ignore_errors=True)
 
 def test_delete_copied():
     '''
