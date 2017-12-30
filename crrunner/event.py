@@ -143,7 +143,7 @@ class Result(object):
     Brief:
         Object used to store information about the result of an event, including stdout, stderr and remoteReturnCode.
     '''
-    def __init__(self, statusCode=STATUS_SUCCESS, remoteReturnCode=None, stdout=None, stderr=None, exception=None, statusCodeDict=None):
+    def __init__(self, statusCode=STATUS_SUCCESS, remoteReturnCode=STATUS_SUCCESS, stdout=None, stderr=None, exception=None, statusCodeDict=None):
         '''
         Brief:
             init for Result object. The result is the result of a command executed remotely.
@@ -183,9 +183,9 @@ class Result(object):
             Fancy to string for the Result, that shows all information
         '''
         retStr = ''
-        retStr += 'statusCode: %d\n' % self.statusCode
+        retStr += 'statusCode: %s\n' % self.statusCode
         retStr += 'statusCodeParsed: %s\n' % self.getStatus()
-        retStr += 'remoteReturnCode: %d\n' % self.remoteReturnCode
+        retStr += 'remoteReturnCode: %s\n' % self.remoteReturnCode
         retStr += 'exception: \n%s\n' % self.exception
         retStr += 'stdout:\n%s\n' % self.stdout
         retStr += 'stderr:\n%s\n' % self.stderr
