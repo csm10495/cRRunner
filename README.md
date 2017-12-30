@@ -15,7 +15,7 @@ CopyFromRemoteEvent - To copy files from the remote to local
 DeleteAllCopiedToRemote - To delete all files (on remote) copied to remote thus far.
 '''
 
-runner = cRRunner(remoteIp=<ip>, remoteUserName=<user>, remotePassword=<password>, eventList=eventList)
+runner = cRRunner(remoteIp=<ip>, remoteUsername=<user>, remotePassword=<password>, eventList=eventList)
 resultList = runner.run()
 
 print (resultList[0].stdout)
